@@ -60,26 +60,43 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $fotoFinal = $user["foto"];
 
             if (!empty($_FILES["foto"]["name"])) {
-                $ext = strtolower(pathinfo($_FILES["foto"]["name"], PATHINFO_EXTENSION));
-                $permitidas = ['jpg', 'jpeg', 'png', 'webp'];
+                switch ($_FILES['foto']['error']) {
+                    case UPLOAD_ERR_OK:
+                        break;
+                    case UPLOAD_ERR_INI_SIZE:
+                    case UPLOAD_ERR_FORM_SIZE:
+                        $erro = 'A imagem é demasiado grande. Verifique o tamanho máximo de upload no servidor.';
+                        break;
+                    case UPLOAD_ERR_PARTIAL:
+                        $erro = 'O upload da imagem foi interrompido.';
+                        break;
+                    default:
+                        $erro = 'Erro ao enviar a foto (código ' . $_FILES['foto']['error'] . ').';
+                        break;
+                }
 
-                if (!in_array($ext, $permitidas)) {
-                    $erro = "Formato de imagem inválido.";
-                } else {
-                    $novoNome = "user_{$user_id}_" . time() . "." . $ext;
-                    // Assegurar que a pasta uploads existe
-                    $uploadsDir = __DIR__ . '/uploads';
-                    if (!is_dir($uploadsDir)) {
-                        mkdir($uploadsDir, 0777, true);
-                    }
+                if (!$erro) {
+                    $ext = strtolower(pathinfo($_FILES["foto"]["name"], PATHINFO_EXTENSION));
+                    $permitidas = ['jpg', 'jpeg', 'png', 'webp'];
 
-                    $destinoFisico = $uploadsDir . '/' . $novoNome;
-
-                    if (move_uploaded_file($_FILES["foto"]["tmp_name"], $destinoFisico)) {
-                        $fotoFinal = $novoNome; // armazenar só o nome no DB
-                        $avatarPath = 'uploads/' . $novoNome; // atualizar avatar imediatamente
+                    if (!in_array($ext, $permitidas)) {
+                        $erro = "Formato de imagem inválido.";
                     } else {
-                        $erro = "Erro ao enviar a imagem.";
+                        $novoNome = "user_{$user_id}_" . time() . "." . $ext;
+                        // Assegurar que a pasta uploads existe
+                        $uploadsDir = __DIR__ . '/uploads';
+                        if (!is_dir($uploadsDir)) {
+                            mkdir($uploadsDir, 0777, true);
+                        }
+
+                        $destinoFisico = $uploadsDir . '/' . $novoNome;
+
+                        if (move_uploaded_file($_FILES["foto"]["tmp_name"], $destinoFisico)) {
+                            $fotoFinal = $novoNome; // armazenar só o nome no DB
+                            $avatarPath = 'uploads/' . $novoNome; // atualizar avatar imediatamente
+                        } else {
+                            $erro = "Erro ao enviar a imagem.";
+                        }
                     }
                 }
             }
@@ -102,10 +119,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 
 // Detectar logo da empresa
-$logo = "uploads/default.png";
+$logo = '/uploads/default.png';
 $candidates = glob(__DIR__ . '/uploads/logo.*');
 if (!empty($candidates)) {
-    $logo = 'uploads/' . basename($candidates[0]);
+    $logo = '/uploads/' . basename($candidates[0]);
 }
 ?>
 <!DOCTYPE html>
@@ -533,10 +550,10 @@ body {
 
             <div class="form-group">
                 <label for="email"><i class="fas fa-envelope"></i> Email</label>
-                <input type="email" id="email" name="email" value="<?= htmlspecialchars($user["email"]) ?>" required placeholder="o.seu@email.com">
+                <input type="email" id="email" name="email" value="<?= htmlspecialchars($user["email"]) ?>" required placeholder="o.seu@email.com" autocapitalize="off" autocorrect="off" spellcheck="false">
             </div>
 
-            <input type="file" id="foto-input" name="foto" accept="image/*">
+            <input type="file" id="foto-input" name="foto" accept="image/*" capture="environment">
 
             <button type="submit" class="submit-btn">
                 <i class="fas fa-save"></i> Guardar Alterações

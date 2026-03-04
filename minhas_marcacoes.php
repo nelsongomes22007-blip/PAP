@@ -396,7 +396,7 @@ body {
 <!-- TOPBAR -->
 <div class="topbar">
     <a class="logo" href="index.php">
-        <img src="<?php echo htmlspecialchars($logo); ?>" alt="Logo" onerror="this.src='uploads/default.png'">
+        <img src="<?php echo htmlspecialchars($logo); ?>" alt="Logo" onerror="this.src='/uploads/default.png'">
         <span>Sarytha Nails</span>
     </a>
 

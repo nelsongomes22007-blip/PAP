@@ -20,40 +20,44 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
-    if ($user && password_verify($senha, $user["password"])) {
-        $_SESSION["user_id"] = $user["id"];
-        $_SESSION["nome"] = $user["nome"];
-        // Normalizar valores antigos ('user') para 'cliente' para manter consistência
-        $roleVal = $user["role"];
-        if ($roleVal === 'user') {
-            $roleVal = 'cliente';
-        }
-        // for consistency always store lowercase roles
-        $roleVal = strtolower($roleVal);
-        $_SESSION["role"] = $roleVal;
+    if ($user) {
+        if (password_verify($senha, $user["password"])) {
+            $_SESSION["user_id"] = $user["id"];
+            $_SESSION["nome"] = $user["nome"];
+            // Normalizar valores antigos ('user') para 'cliente' para manter consistência
+            $roleVal = $user["role"];
+            if ($roleVal === 'user') {
+                $roleVal = 'cliente';
+            }
+            // for consistency always store lowercase roles
+            $roleVal = strtolower($roleVal);
+            $_SESSION["role"] = $roleVal;
 
-        // Normalizar e guardar o caminho da foto na sessão.
-        $fotoPath = $user['foto'] ?? '';
-        if ($fotoPath) {
-            if (strpos($fotoPath, 'uploads/') !== 0 && file_exists(__DIR__ . '/uploads/' . $fotoPath)) {
-                $fotoPath = 'uploads/' . $fotoPath;
-            } elseif (strpos($fotoPath, 'uploads/') === 0 && !file_exists(__DIR__ . '/' . $fotoPath)) {
-                // Fallback se o ficheiro não existir
+            // Normalizar e guardar o caminho da foto na sessão.
+            $fotoPath = $user['foto'] ?? '';
+            if ($fotoPath) {
+                if (strpos($fotoPath, 'uploads/') !== 0 && file_exists(__DIR__ . '/uploads/' . $fotoPath)) {
+                    $fotoPath = 'uploads/' . $fotoPath;
+                } elseif (strpos($fotoPath, 'uploads/') === 0 && !file_exists(__DIR__ . '/' . $fotoPath)) {
+                    // Fallback se o ficheiro não existir
+                    $fotoPath = 'uploads/default.png';
+                }
+            } else {
                 $fotoPath = 'uploads/default.png';
             }
-        } else {
-            $fotoPath = 'uploads/default.png';
-        }
-        $_SESSION['foto'] = $fotoPath;
+            $_SESSION['foto'] = $fotoPath;
 
-        if (strtolower($user["role"]) === "admin") {
-            header("Location: Admin/index.php");
+            if (strtolower($user["role"]) === "admin") {
+                header("Location: Admin/index.php");
+            } else {
+                header("Location: index.php");
+            }
+            exit;
         } else {
-            header("Location: index.php");
+            $erro = "Password incorreta para este email.";
         }
-        exit;
     } else {
-        $erro = "Email ou password inválidos.";
+        $erro = "Email não encontrado.";
     }
 }
 ?>
@@ -323,12 +327,12 @@ body {
         <form method="post">
             <div class="form-group">
                 <label for="email"><i class="fas fa-envelope"></i> Email</label>
-                <input type="email" id="email" name="email" required placeholder="o.seu@email.com">
+                <input type="email" id="email" name="email" required placeholder="o.seu@email.com" autocapitalize="off" autocorrect="off" spellcheck="false">
             </div>
 
             <div class="form-group">
                 <label for="senha"><i class="fas fa-lock"></i> Password</label>
-                <input type="password" id="senha" name="senha" required placeholder="A sua password">
+                <input type="password" id="senha" name="senha" required placeholder="A sua password" autocapitalize="off" autocorrect="off" spellcheck="false">
             </div>
 
             <button type="submit" class="submit-btn">

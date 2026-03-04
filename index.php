@@ -116,10 +116,12 @@ $logo = "";
 $candidates = glob(__DIR__ . '/uploads/logo.*');
 
 if (!empty($candidates)) {
-    $logo = 'uploads/' . basename($candidates[0]);
+    // usar caminho absoluto relativo à raiz para evitar problemas de contexto
+    $logo = '/uploads/' . basename($candidates[0]);
 } elseif (file_exists(__DIR__ . '/uploads/default.png')) {
-    $logo = 'uploads/default.png';
-}
+    $logo = '/uploads/default.png';
+} // se não houver nada, ficará vazio e a <img> é omitida
+
 
 /* ===============================
    FOTO UTILIZADOR
@@ -825,7 +827,7 @@ section {
 <div class="topbar">
     <a class="logo" href="index.php">
         <?php if (!empty($logo)): ?>
-            <img src="<?php echo htmlspecialchars($logo); ?>" alt="Logo">
+            <img src="<?php echo htmlspecialchars($logo); ?>" alt="Logo" onerror="this.src='/uploads/default.png'">
         <?php endif; ?>
         <span>Sarytha Nails</span>
     </a>

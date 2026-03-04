@@ -38,19 +38,37 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // Tratar upload de foto (opcional)
             $fotoFinal = null; // guardar só o nome no DB
             if (!empty($_FILES['foto']['name'])) {
-                $ext = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
-                $permitidas = ['jpg','jpeg','png','webp'];
-                if (!in_array($ext, $permitidas)) {
-                    $erro = 'Formato de imagem inválido.';
-                } else {
-                    $uploadsDir = __DIR__ . '/uploads';
-                    if (!is_dir($uploadsDir)) mkdir($uploadsDir, 0777, true);
-                    $novoNome = 'user_' . time() . '.' . $ext;
-                    $destino = $uploadsDir . '/' . $novoNome;
-                    if (move_uploaded_file($_FILES['foto']['tmp_name'], $destino)) {
-                        $fotoFinal = $novoNome; // armazenar só o nome
+                // check for upload errors first
+                switch ($_FILES['foto']['error']) {
+                    case UPLOAD_ERR_OK:
+                        break;
+                    case UPLOAD_ERR_INI_SIZE:
+                    case UPLOAD_ERR_FORM_SIZE:
+                        $erro = 'A imagem é demasiado grande. Verifique o tamanho máximo de upload no servidor.';
+                        break;
+                    case UPLOAD_ERR_PARTIAL:
+                        $erro = 'O upload da imagem foi interrompido.';
+                        break;
+                    default:
+                        $erro = 'Erro ao enviar a foto (código ' . $_FILES['foto']['error'] . ').';
+                        break;
+                }
+
+                if (!$erro) {
+                    $ext = strtolower(pathinfo($_FILES['foto']['name'], PATHINFO_EXTENSION));
+                    $permitidas = ['jpg','jpeg','png','webp'];
+                    if (!in_array($ext, $permitidas)) {
+                        $erro = 'Formato de imagem inválido.';
                     } else {
-                        $erro = 'Erro ao enviar a foto.';
+                        $uploadsDir = __DIR__ . '/uploads';
+                        if (!is_dir($uploadsDir)) mkdir($uploadsDir, 0777, true);
+                        $novoNome = 'user_' . time() . '.' . $ext;
+                        $destino = $uploadsDir . '/' . $novoNome;
+                        if (move_uploaded_file($_FILES['foto']['tmp_name'], $destino)) {
+                            $fotoFinal = $novoNome; // armazenar só o nome
+                        } else {
+                            $erro = 'Erro ao enviar a foto.';
+                        }
                     }
                 }
             }
@@ -434,7 +452,7 @@ body {
 
             <div class="form-group">
                 <label for="foto"><i class="fas fa-image"></i> Foto de perfil (opcional)</label>
-                <input type="file" id="foto" name="foto" accept="image/*">
+                <input type="file" id="foto" name="foto" accept="image/*" capture="environment">
             </div>
 
             <?php if (strtolower($_SESSION['role'] ?? '') === 'admin'): ?>
