@@ -1,0 +1,20 @@
+{
+  "name": "Sarytha Nails",
+  "short_name": "Sarytha",
+  "start_url": "/index.php",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#b0357c",
+  "icons": [
+    {
+      "src": "uploads/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "uploads/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
