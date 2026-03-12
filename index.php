@@ -754,6 +754,19 @@ section {
     border-color: #dc3545;
 }
 
+/* SLOT PICKER STYLES */
+.slot {
+    display: inline-block;
+    padding: 6px 10px;
+    margin: 4px 2px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    cursor: pointer;
+}
+.slot.available { background: #28a745; color: #fff; }
+.slot.unavailable { background: #dc3545; color: #fff; cursor: not-allowed; }
+.slot.selected { border: 2px solid #000; }
+
 /* RESPONSIVE */
 @media (max-width: 768px) {
     .topbar {
@@ -986,8 +999,11 @@ section {
 
                 <div class="form-group">
                     <label><i class="fas fa-clock"></i> Hora Preferida</label>
-                    <input type="time" name="hora" required>
+                    <input type="time" name="hora" required id="horaInput">
                 </div>
+
+                <!-- slot picker will be filled dynamically -->
+                <div id="slotPicker" style="margin-top:15px;"></div>
 
                 <div class="form-group">
                     <button type="submit" class="btn-submit"><i class="fas fa-check"></i> Confirmar Marcação</button>
@@ -1149,7 +1165,7 @@ section {
                     </li>
                     <li>
                         <i class="fas fa-map-marker-alt"></i> 
-                        Avenida Principal, Lisboa, Portugal
+                        R. da Ameixoeira, barcelos, Portugal
                     </li>
                 </ul>
             </div>
@@ -1270,6 +1286,102 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// --- SLOT PICKER LOGIC --------------------------------------------------
+(function() {
+    const dateInput = document.querySelector('input[name="data"]');
+    const slotPicker = document.getElementById('slotPicker');
+    const timeInput = document.getElementById('horaInput');
+
+    if (dateInput) {
+        dateInput.addEventListener('change', loadSlots);
+    }
+
+    function loadSlots() {
+        const date = this.value;
+        slotPicker.innerHTML = '';
+        if (!date) return;
+        fetch('api/horarios.php?date=' + encodeURIComponent(date))
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    slotPicker.textContent = 'Erro ao carregar horários.';
+                    return;
+                }
+                const periods = data.periods || [];
+                const bookings = data.bookings || [];
+                const allSlots = [];
+                // generate slots from 06:00 to 22:00 so user sees out-of-hours times too
+                const minDay = toMinutes('06:00');
+                const maxDay = toMinutes('22:00');
+                for (let m = minDay; m < maxDay; m += 30) {
+                    allSlots.push(minutesToTime(m));
+                }
+                allSlots.forEach(ts => {
+                    const tmin = toMinutes(ts);
+                    // check if slot falls inside any business period
+                    let inPeriod = periods.some(p => {
+                        const ps = toMinutes(p.start);
+                        const pe = toMinutes(p.end);
+                        return tmin >= ps && tmin < pe;
+                    });
+                    let avail = !!inPeriod;
+                    if (avail) {
+                        bookings.forEach(b => {
+                            const bstart = toMinutes(b.hora);
+                            const bend = bstart + (b.dur || 0);
+                            if (tmin >= bstart && tmin < bend) {
+                                avail = false;
+                            }
+                        });
+                    }
+                    const span = document.createElement('span');
+                    span.textContent = ts;
+                    span.className = 'slot ' + (avail ? 'available' : 'unavailable');
+                    if (avail) {
+                        span.addEventListener('click', () => {
+                            document.querySelectorAll('.slot').forEach(s=>s.classList.remove('selected'));
+                            span.classList.add('selected');
+                            timeInput.value = ts;
+                        });
+                    }
+                    slotPicker.appendChild(span);
+                });
+                if (allSlots.length === 0) {
+                    slotPicker.textContent = 'Não há horários de funcionamento para esse dia.';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                slotPicker.textContent = 'Erro ao consultar horários.';
+            });
+    }
+
+    function toMinutes(hhmm) {
+        const [h,m] = hhmm.split(':').map(Number);
+        return h*60 + m;
+    }
+    function minutesToTime(m) {
+        const h = Math.floor(m/60);
+        const mi = m%60;
+        return String(h).padStart(2,'0') + ':' + String(mi).padStart(2,'0');
+    }
+
+    window.addEventListener('load', () => {
+        if (dateInput && dateInput.value) {
+            loadSlots.call(dateInput);
+        }
+    });
+
+    if (timeInput) {
+        timeInput.addEventListener('change', () => {
+            document.querySelectorAll('.slot').forEach(s=>{
+                s.classList.toggle('selected', s.textContent === timeInput.value);
+            });
+        });
+    }
+})();
+
 </script>
 
 </body>

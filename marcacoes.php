@@ -44,13 +44,13 @@ $guest_email = trim($_POST['email'] ?? '');
 // Validar se veio preenchido
 if (empty($data) || empty($hora) || empty($servico)) {
     // redirect with error
-    header("Location: index.php?marcacao_erro=empty");
+    header("Location: index.php?marcacao_erro=empty#booking");
     exit;
 }
 
 // serviço válido
 if (!array_key_exists($servico, $servicos)) {
-    header("Location: index.php?marcacao_erro=service");
+    header("Location: index.php?marcacao_erro=service#booking");
     exit;
 }
 
@@ -58,7 +58,7 @@ if (!array_key_exists($servico, $servicos)) {
 $dObj = DateTime::createFromFormat('Y-m-d', $data);
 $tObj = DateTime::createFromFormat('H:i', $hora);
 if (!$dObj || $dObj->format('Y-m-d') !== $data || !$tObj || $tObj->format('H:i') !== $hora) {
-    header("Location: index.php?marcacao_erro=format");
+    header("Location: index.php?marcacao_erro=format#booking");
     exit;
 }
 
@@ -67,7 +67,7 @@ $now = new DateTime();
 $bookingDT = DateTime::createFromFormat('Y-m-d H:i', "$data $hora");
 if (!$bookingDT || $bookingDT < $now) {
     file_put_contents(__DIR__ . '/scripts/marcacoes_errors.log', "[".date('Y-m-d H:i:s')."] past check failed: now={$now->format('Y-m-d H:i:s')}, booking={$bookingDT?->format('Y-m-d H:i:s')}\n", FILE_APPEND);
-    header("Location: index.php?marcacao_erro=past");
+    header("Location: index.php?marcacao_erro=past#booking");
     exit;
 }
 
@@ -89,7 +89,7 @@ if ($weekday >= 1 && $weekday <= 5) {
 }
 if (!$inSlot) {
     file_put_contents(__DIR__ . '/scripts/marcacoes_errors.log', "[".date('Y-m-d H:i:s')."] outside business hours: weekday=$weekday, time={$tObj->format('H:i')}\n", FILE_APPEND);
-    header("Location: index.php?marcacao_erro=horario");
+    header("Location: index.php?marcacao_erro=horario#booking");
     exit;
 }
 
@@ -102,7 +102,7 @@ $stmt->execute([$data, $hora, $dur, $dur, $hora]);
 $cnt = $stmt->fetchColumn();
 if ($cnt > 0) {
     file_put_contents(__DIR__ . '/scripts/marcacoes_errors.log', "[".date('Y-m-d H:i:s')."] ocupado check failed: date=$data, hora=$hora, count=$cnt\n", FILE_APPEND);
-    header("Location: index.php?marcacao_erro=ocupada");
+    header("Location: index.php?marcacao_erro=ocupada#booking");
     exit;
 }
 
@@ -165,7 +165,7 @@ try {
     $stmt = $pdo->prepare($query);
     $stmt->execute($vals);
 
-    header("Location: index.php?marcacao_sucesso=1");
+    header("Location: index.php?marcacao_sucesso=1#booking");
     exit;
 
 } catch (Exception $e) {
