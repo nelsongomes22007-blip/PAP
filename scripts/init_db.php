@@ -119,10 +119,48 @@ if ($userTable === 'utilizadores') {
     // normalizar registos que ainda contenham o legado 'user'
     $pdo->exec("UPDATE utilizadores SET role='cliente' WHERE role='user' OR role IS NULL");
     log_output("✔️ Coluna 'role' de 'utilizadores' preparada com DEFAULT 'cliente' e valores antigos corrigidos", 'info');
+
+    // Garantir colunas de recuperação de password
+    try {
+        $cols = [];
+        $stmt = $pdo->query("DESCRIBE utilizadores");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $cols[] = $row['Field'];
+        }
+        if (!in_array('reset_token', $cols)) {
+            $pdo->exec("ALTER TABLE utilizadores ADD COLUMN reset_token VARCHAR(128) NULL");
+            log_output("✓ Coluna 'reset_token' adicionada a 'utilizadores'", 'success');
+        }
+        if (!in_array('reset_token_expires', $cols)) {
+            $pdo->exec("ALTER TABLE utilizadores ADD COLUMN reset_token_expires DATETIME NULL");
+            log_output("✓ Coluna 'reset_token_expires' adicionada a 'utilizadores'", 'success');
+        }
+    } catch (PDOException $e) {
+        log_output("⚠ Não foi possível garantir colunas de recuperação de password em 'utilizadores'", 'warning');
+    }
 } elseif ($userTable === 'users') {
     $pdo->exec("ALTER TABLE users MODIFY role ENUM('cliente','admin') NOT NULL DEFAULT 'cliente'");
     $pdo->exec("UPDATE users SET role='cliente' WHERE role='user' OR role IS NULL");
     log_output("✔️ Coluna 'role' de 'users' preparada com DEFAULT 'cliente' e valores antigos corrigidos", 'info');
+
+    // Garantir colunas de recuperação de password
+    try {
+        $cols = [];
+        $stmt = $pdo->query("DESCRIBE users");
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $cols[] = $row['Field'];
+        }
+        if (!in_array('reset_token', $cols)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN reset_token VARCHAR(128) NULL");
+            log_output("✓ Coluna 'reset_token' adicionada a 'users'", 'success');
+        }
+        if (!in_array('reset_token_expires', $cols)) {
+            $pdo->exec("ALTER TABLE users ADD COLUMN reset_token_expires DATETIME NULL");
+            log_output("✓ Coluna 'reset_token_expires' adicionada a 'users'", 'success');
+        }
+    } catch (PDOException $e) {
+        log_output("⚠ Não foi possível garantir colunas de recuperação de password em 'users'", 'warning');
+    }
 }
 
 // 2. Create trabalhos table

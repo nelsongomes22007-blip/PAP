@@ -4,6 +4,7 @@ require __DIR__ . '/api/ligacao.php';
 
 $mensagem = null;
 $tipo_mensagem = null;
+$link_html = null;
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = trim($_POST["email"] ?? '');
@@ -41,9 +42,15 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             ");
             $stmt->execute([$token, $expires, $user['id']]);
 
-            // Enviar email
-            $reset_link = "http://localhost/Sarytah_Nails/redefinir_senha.php?token=" . $token;
-            
+            // Preparar link de recuperação (funciona em qualquer domínio/pasta)
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $basePath = rtrim(dirname($_SERVER['PHP_SELF']), '/\\');
+            if ($basePath === '.' || $basePath === '') {
+                $basePath = '';
+            }
+            $reset_link = $protocol . '://' . $host . $basePath . '/redefinir_senha.php?token=' . $token;
+
             $assunto = "Recuperação de Password - Sarytha Nails";
             $mensagem_email = "
                 <html>
@@ -96,14 +103,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $headers .= "From: info@sarytahnails.com\r\n";
 
             // Enviar email
-            if (mail($email, $assunto, $mensagem_email, $headers)) {
+            $mailSent = mail($email, $assunto, $mensagem_email, $headers);
+            $isLocalhost = in_array($host, ['localhost', '127.0.0.1']);
+            $showLink = !$mailSent || $isLocalhost;
+
+            if ($mailSent) {
                 $mensagem = "Email de recuperação enviado com sucesso! Verifique o seu email.";
                 $tipo_mensagem = "success";
                 // Limpar o formulário
                 $_POST = [];
             } else {
-                $mensagem = "Erro ao enviar email. Por favor, tente novamente.";
+                $mensagem = "Não foi possível enviar o email. Use o link abaixo para redefinir a password.";
                 $tipo_mensagem = "danger";
+            }
+
+            if ($showLink) {
+                $link_html = "<div class='info-box' style='margin-top: 15px;'><strong>Link de recuperação: </strong> <a href='" . htmlspecialchars($reset_link) . "'>" . htmlspecialchars($reset_link) . "</a></div>";
             }
         }
     }
@@ -392,6 +407,10 @@ body {
                 <i class="fas fa-<?php echo $tipo_mensagem === 'success' ? 'check-circle' : 'exclamation-circle'; ?>"></i>
                 <?php echo htmlspecialchars($mensagem); ?>
             </div>
+        <?php endif; ?>
+
+        <?php if ($link_html): ?>
+            <?php echo $link_html; ?>
         <?php endif; ?>
 
         <div class="info-box">

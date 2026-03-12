@@ -1,9 +1,8 @@
 <?php
 $host = "localhost";
 $db   = "sara_gomes_nails";
-user = "sarytah_user"; // Altere para o seu utilizador MySQL
-$pass = "#1ZMgigKvyfvo$38";
-pass = "senha_segura123"; // Altere para a sua senha MySQL
+$user = "sarytah_user"; // Altere para o seu utilizador MySQL
+$pass = "senha_segura123"; // Altere para a sua senha MySQL
 
 try {
     $pdo = new PDO(
